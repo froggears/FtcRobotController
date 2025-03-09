@@ -114,17 +114,21 @@ public class RobotTeleopTank_Iterative extends OpMode{
      */
     @Override
     public void loop() {
-        double left;
-        double right;
+        double left =0;
+        double right =0;
+       if (gamepad1.right_bumper){
+           leftDrive.setPower(0.3);
+           rightDrive.setPower(-0.3);
 
-        // Run wheels in tank mode (note: The joystick goes negative when pushed forward, so negate it)
-        left = -gamepad1.left_stick_y;
-        right = -gamepad1.right_stick_y;
+       } else {
+           // Run wheels in tank mode (note: The joystick goes negative when pushed forward, so negate it)
+           left = -gamepad1.left_stick_y;
+           right = -gamepad1.right_stick_y;
 
-        leftDrive.setPower(left);
-        rightDrive.setPower(right);
+           leftDrive.setPower(left);
+           rightDrive.setPower(right);
 
-
+       }
 
 
 
