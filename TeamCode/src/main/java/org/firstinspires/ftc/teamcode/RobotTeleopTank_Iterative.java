@@ -36,6 +36,8 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcore.internal.camera.delegating.DelegatingCaptureSequence;
+
 /*
  * This OpMode executes a Tank Drive control TeleOp a direct drive robot
  * The code is structured as an Iterative OpMode
@@ -49,22 +51,17 @@ import com.qualcomm.robotcore.util.Range;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Robot: Teleop Tank", group="Robot")
+@TeleOp(name = "Robot: Teleop Tank", group = "Robot")
 
-public class RobotTeleopTank_Iterative extends OpMode{
+public class RobotTeleopTank_Iterative extends OpMode {
 
     /* Declare OpMode members. */
-    public DcMotor  leftDrive   = null;
-    public DcMotor  rightDrive  = null;
+    public DcMotor leftDrive = null;
+    public DcMotor rightDrive = null;
 
 
-
-
-
-
-    public static final double MID_SERVO   =  0.5 ;
-       // sets rate to move servo
-
+    public static final double MID_SERVO = 0.5;
+    // sets rate to move servo
 
 
     /*
@@ -74,7 +71,7 @@ public class RobotTeleopTank_Iterative extends OpMode{
     public void init() {
 
         // Define and Initialize Motors
-        leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
+        leftDrive = hardwareMap.get(DcMotor.class, "left_drive");
         rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
 
 
@@ -114,28 +111,30 @@ public class RobotTeleopTank_Iterative extends OpMode{
      */
     @Override
     public void loop() {
-        double left =0;
-        double right =0;
-       if (gamepad1.right_bumper){
-           leftDrive.setPower(0.3);
-           rightDrive.setPower(-0.3);
 
-       } else {
-           // Run wheels in tank mode (note: The joystick goes negative when pushed forward, so negate it)
-           left = -gamepad1.left_stick_y;
-           right = -gamepad1.right_stick_y;
+        double left = 0;
+        double right = 0;
+        if (gamepad1.right_bumper) {
+            leftDrive.setPower(0.3);
+            rightDrive.setPower(-0.3);
 
-           leftDrive.setPower(left);
-           rightDrive.setPower(right);
+        } else if (gamepad1.left_bumper) {
+            leftDrive.setPower(-0.3);
+            rightDrive.setPower(0.3);
+        } else {
+            // Run wheels in tank mode (note: The joystick goes negative when pushed forward, so negate it)
+            left = -gamepad1.left_stick_y;
+            right = -gamepad1.right_stick_y;
 
-       }
+            leftDrive.setPower(left);
+            rightDrive.setPower(right);
 
-
+        }
 
 
         // Send telemetry message to signify robot running;
 
-        telemetry.addData("left",  "%.2f", left);
+        telemetry.addData("left", "%.2f", left);
         telemetry.addData("right", "%.2f", right);
     }
 
