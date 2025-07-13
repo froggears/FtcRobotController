@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.robotcontroller.external.samples;
+package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -35,6 +35,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
+
+import org.firstinspires.ftc.robotcore.internal.camera.delegating.DelegatingCaptureSequence;
 
 /*
  * This OpMode executes a Tank Drive control TeleOp a direct drive robot
@@ -49,49 +51,45 @@ import com.qualcomm.robotcore.util.Range;
  * Remove or comment out the @Disabled line to add this OpMode to the Driver Station OpMode list
  */
 
-@TeleOp(name="Robot: Teleop Tank", group="Robot")
-@Disabled
-public class RobotTeleopTank_Iterative extends OpMode{
+@TeleOp(name = "Robot: Teleop Tank", group = "Robot")
+
+public class RobotTeleopTank_Iterative extends OpMode {
 
     /* Declare OpMode members. */
-    public DcMotor  leftDrive   = null;
-    public DcMotor  rightDrive  = null;
-    public DcMotor  leftArm     = null;
-    public Servo    leftClaw    = null;
-    public Servo    rightClaw   = null;
+    public DcMotor left_Drive = null;
+    public DcMotor right_Drive = null;
+    public boolean is_toggled_forward = false;
+    public boolean n_minus_1_dpadup = false;
+    public boolean is_manual_drive = true;
+    private boolean n_minus_1_x = false;
 
-    double clawOffset = 0;
+    public static final double MID_SERVO = 0.5;
+    // sets rate to move servo
 
-    public static final double MID_SERVO   =  0.5 ;
-    public static final double CLAW_SPEED  = 0.02 ;        // sets rate to move servo
-    public static final double ARM_UP_POWER    =  0.50 ;   // Run arm motor up at 50% power
-    public static final double ARM_DOWN_POWER  = -0.25 ;   // Run arm motor down at -25% power
 
     /*
      * Code to run ONCE when the driver hits INIT
      */
     @Override
     public void init() {
+
         // Define and Initialize Motors
-        leftDrive  = hardwareMap.get(DcMotor.class, "left_drive");
-        rightDrive = hardwareMap.get(DcMotor.class, "right_drive");
-        leftArm    = hardwareMap.get(DcMotor.class, "left_arm");
+        left_Drive = hardwareMap.get(DcMotor.class, "left_drive");
+        right_Drive = hardwareMap.get(DcMotor.class, "right_drive");
+
 
         // To drive forward, most robots need the motor on one side to be reversed, because the axles point in opposite directions.
         // Pushing the left and right sticks forward MUST make robot go forward. So adjust these two lines based on your first test drive.
         // Note: The settings here assume direct drive on left and right wheels.  Gear Reduction or 90 Deg drives may require direction flips
-        leftDrive.setDirection(DcMotor.Direction.REVERSE);
-        rightDrive.setDirection(DcMotor.Direction.FORWARD);
+        left_Drive.setDirection(DcMotor.Direction.REVERSE);
+        right_Drive.setDirection(DcMotor.Direction.FORWARD);
 
         // If there are encoders connected, switch to RUN_USING_ENCODER mode for greater accuracy
         // leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         // rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // Define and initialize ALL installed servos.
-        leftClaw  = hardwareMap.get(Servo.class, "left_hand");
-        rightClaw = hardwareMap.get(Servo.class, "right_hand");
-        leftClaw.setPosition(MID_SERVO);
-        rightClaw.setPosition(MID_SERVO);
+
 
         // Send telemetry message to signify robot waiting;
         telemetry.addData(">", "Robot Ready.  Press START.");    //
@@ -111,44 +109,92 @@ public class RobotTeleopTank_Iterative extends OpMode{
     public void start() {
     }
 
+    private void manual_drive() {
+        double left = 0;
+        double right = 0;
+        left_Drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        right_Drive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        if (is_toggled_forward) {
+            left_Drive.setPower(3);
+            right_Drive.setPower(3);
+
+        } else if (gamepad1.left_trigger > 0.05) {
+            float power = gamepad1.left_trigger;
+            left_Drive.setPower(power);
+            right_Drive.setPower(power);
+        } else if (gamepad1.right_trigger > 0.05) {
+            float power = gamepad1.right_trigger;
+            left_Drive.setPower(-power);
+            right_Drive.setPower(-power);
+        } else if (gamepad1.right_bumper) {
+            left_Drive.setPower(0.5);
+            right_Drive.setPower(-0.5);
+
+        } else if (gamepad1.left_bumper) {
+            left_Drive.setPower(-0.5);
+            right_Drive.setPower(0.5);
+
+
+        } else if (gamepad1.dpad_right) {
+            left_Drive.setPower(0.7);
+
+            right_Drive.setPower(1);
+        } else if (gamepad1.dpad_left) {
+            left_Drive.setPower(0.1);
+
+            right_Drive.setPower(0.7);
+        } else {
+            // Run wheels in tank mode (note: The joystick goes negative when pushed forward, so negate it)
+            left = -gamepad1.left_stick_y;
+            right = -gamepad1.right_stick_y;
+
+            left_Drive.setPower(left);
+            right_Drive.setPower(right);
+        }
+
+    }
+
+    private void semi_autonomus_drive() {
+        if (gamepad1.dpad_up && n_minus_1_dpadup == false) {
+
+            int six_inch = 533;
+            int rightdesiredPosition = right_Drive.getCurrentPosition() + 533;
+            int leftdesiredPosition = left_Drive.getCurrentPosition() + 533;
+            int desiredPosition = 1000; // The position (in ticks) that you want the motor to move to
+            left_Drive.setTargetPosition(leftdesiredPosition); // Tells the motor that the position it should go to is desiredPosition
+            left_Drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            left_Drive.setPower(1); // Sets the maximum power that the motor can go at
+            right_Drive.setTargetPosition(rightdesiredPosition); // Tells the motor that the position it should go to is desiredPosition
+            right_Drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            right_Drive.setPower(1); // Sets the maximum power that the motor can go at
+
+
+        }
+    }
+
+
     /*
      * Code to run REPEATEDLY after the driver hits START but before they hit STOP
      */
     @Override
     public void loop() {
-        double left;
-        double right;
-
-        // Run wheels in tank mode (note: The joystick goes negative when pushed forward, so negate it)
-        left = -gamepad1.left_stick_y;
-        right = -gamepad1.right_stick_y;
-
-        leftDrive.setPower(left);
-        rightDrive.setPower(right);
-
-        // Use gamepad left & right Bumpers to open and close the claw
-        if (gamepad1.right_bumper)
-            clawOffset += CLAW_SPEED;
-        else if (gamepad1.left_bumper)
-            clawOffset -= CLAW_SPEED;
-
-        // Move both servos to new position.  Assume servos are mirror image of each other.
-        clawOffset = Range.clip(clawOffset, -0.5, 0.5);
-        leftClaw.setPosition(MID_SERVO + clawOffset);
-        rightClaw.setPosition(MID_SERVO - clawOffset);
-
-        // Use gamepad buttons to move the arm up (Y) and down (A)
-        if (gamepad1.y)
-            leftArm.setPower(ARM_UP_POWER);
-        else if (gamepad1.a)
-            leftArm.setPower(ARM_DOWN_POWER);
-        else
-            leftArm.setPower(0.0);
+        if (gamepad1.x && n_minus_1_x == false) {
+            is_manual_drive = !is_manual_drive;
+        }
+        if (is_manual_drive) {
+            manual_drive();
+        } else {
+            semi_autonomus_drive();
+        }
+        n_minus_1_dpadup = gamepad1.dpad_up;
+        n_minus_1_x = gamepad1.x;
 
         // Send telemetry message to signify robot running;
-        telemetry.addData("claw",  "Offset = %.2f", clawOffset);
-        telemetry.addData("left",  "%.2f", left);
-        telemetry.addData("right", "%.2f", right);
+
+        //telemetry.addData("left", "%.2f", left);
+        //   telemetry.addData("right", "%.2f", right);
+        telemetry.addData("rightPosition", right_Drive.getCurrentPosition());
+        telemetry.addData("leftPosition", left_Drive.getCurrentPosition());
     }
 
     /*
