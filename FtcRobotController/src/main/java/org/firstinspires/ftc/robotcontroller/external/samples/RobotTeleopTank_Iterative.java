@@ -154,20 +154,25 @@ public class RobotTeleopTank_Iterative extends OpMode {
 
     }
 
+    private void drive_straight_x_inch(int inches) {
+        int encodder_count = 89 * inches;
+        int rightdesiredPosition = right_Drive.getCurrentPosition() + encodder_count;
+        int leftdesiredPosition = left_Drive.getCurrentPosition() + encodder_count;
+        int desiredPosition = 1000; // The position (in ticks) that you want the motor to move to
+        left_Drive.setTargetPosition(leftdesiredPosition); // Tells the motor that the position it should go to is desiredPosition
+        left_Drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        left_Drive.setPower(1); // Sets the maximum power that the motor can go at
+        right_Drive.setTargetPosition(rightdesiredPosition); // Tells the motor that the position it should go to is desiredPosition
+        right_Drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        right_Drive.setPower(1); // Sets the maximum power that the motor can go at
+
+
+    }
+
     private void semi_autonomus_drive() {
         if (gamepad1.dpad_up && n_minus_1_dpadup == false) {
 
-            int six_inch = 533;
-            int rightdesiredPosition = right_Drive.getCurrentPosition() + 533;
-            int leftdesiredPosition = left_Drive.getCurrentPosition() + 533;
-            int desiredPosition = 1000; // The position (in ticks) that you want the motor to move to
-            left_Drive.setTargetPosition(leftdesiredPosition); // Tells the motor that the position it should go to is desiredPosition
-            left_Drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            left_Drive.setPower(1); // Sets the maximum power that the motor can go at
-            right_Drive.setTargetPosition(rightdesiredPosition); // Tells the motor that the position it should go to is desiredPosition
-            right_Drive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            right_Drive.setPower(1); // Sets the maximum power that the motor can go at
-
+            drive_straight_x_inch(12);
 
         }
     }
